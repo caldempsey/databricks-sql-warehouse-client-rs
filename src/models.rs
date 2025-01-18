@@ -1,6 +1,24 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// A single "page" of result data for a SQL statement, either inline or via external links,
+/// plus an optional next chunk index for pagination.
+#[derive(Debug)]
+pub struct SqlResultPage {
+    /// Inline rows, if `disposition=INLINE` and `format=JSON_ARRAY`.
+    pub data_array: Option<Vec<Vec<Option<String>>>>,
+
+    /// External links to data chunks, if `disposition=EXTERNAL_LINKS`.
+    pub external_links: Option<Vec<ExternalLink>>,
+
+    /// The next chunk index, or `None` if there are no more chunks.
+    /// Use this as a pagination key to call
+    /// `get_statement_page(statement_id, Some(next_chunk_index))`
+    /// if you need the next page.
+    pub next_chunk_index: Option<u32>,
+}
+
+
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct StatementRequest {
     pub statement: String,

@@ -1,4 +1,4 @@
 mod service;
 mod models;
-mod client_v2;
-mod api_v2;
+mod api;
+mod api_client;

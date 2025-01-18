@@ -1,17 +1,17 @@
 use reqwest::Client;
+use crate::api::v2_sql_statements::V2SqlStatements;
 
-use crate::api_v2::ApiVersion2;
 use crate::models::*;
 
 /// Low-level Databricks SQL Warehouse client that directly calls the REST endpoints.
 #[derive(Debug, Clone)]
-pub struct ApiClientVersion2 {
+pub struct V2Client {
     base_url: String,
     token: String,
     http_client: Client,
 }
 
-impl ApiClientVersion2 {
+impl V2Client {
     /// Creates a new client with the given Databricks workspace URL and access token.
     ///
     /// Example `base_url`: `https://<your-workspace>.cloud.databricks.com`
@@ -42,7 +42,6 @@ impl ApiClientVersion2 {
         self.handle_response(resp).await
     }
 
-
     /// Helper to handle a StatementResponse or error from Databricks.
     async fn handle_response(
         &self,
@@ -69,7 +68,7 @@ impl ApiClientVersion2 {
     }
 }
 
-impl ApiVersion2 for ApiClientVersion2 {
+impl V2SqlStatements for V2Client {
     /// GET /api/2.0/sql/statements/{statement_id}
     /// Poll for the statement's status, plus the first chunk of results if available.
     async fn get_statement(
@@ -87,6 +86,7 @@ impl ApiVersion2 for ApiClientVersion2 {
 
         self.handle_response(resp).await
     }
+
     /// GET /api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}
     /// Fetch a chunk of results for a completed statement.
     async fn get_statement_result_chunk(
@@ -125,6 +125,7 @@ impl ApiVersion2 for ApiClientVersion2 {
         let chunk = resp.json::<ChunkResponse>().await?;
         Ok(chunk)
     }
+
     /// POST /api/2.0/sql/statements/{statement_id}/cancel
     /// Request that an executing statement be canceled.
     async fn cancel_statement(
@@ -150,8 +151,7 @@ impl ApiVersion2 for ApiClientVersion2 {
             let body = resp.text().await?;
             return Err(DatabricksSqlError::ApiError(format!(
                 "HTTP {}: {}",
-                status,
-                body
+                status, body
             )));
         }
 
@@ -159,4 +159,3 @@ impl ApiVersion2 for ApiClientVersion2 {
         Ok(())
     }
 }
-

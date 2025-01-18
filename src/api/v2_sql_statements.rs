@@ -1,6 +1,6 @@
 use crate::models::{ChunkResponse, DatabricksSqlError, StatementResponse};
 
-pub trait ApiVersion2 {
+pub trait V2SqlStatements {
     /// GET /api/2.0/sql/statements/{statement_id}
     /// Poll for the statement's status, plus the first chunk of results if available.
     async fn get_statement(
