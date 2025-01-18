@@ -1,17 +1,17 @@
 use reqwest::Client;
 
-use crate::api::DatabricksSqlWarehouseAPIV2;
+use crate::api_v2::ApiVersion2;
 use crate::models::*;
 
 /// Low-level Databricks SQL Warehouse client that directly calls the REST endpoints.
 #[derive(Debug, Clone)]
-pub struct DatabricksSqlWarehouseClient {
+pub struct ApiClientVersion2 {
     base_url: String,
     token: String,
     http_client: Client,
 }
 
-impl DatabricksSqlWarehouseClient {
+impl ApiClientVersion2 {
     /// Creates a new client with the given Databricks workspace URL and access token.
     ///
     /// Example `base_url`: `https://<your-workspace>.cloud.databricks.com`
@@ -69,7 +69,7 @@ impl DatabricksSqlWarehouseClient {
     }
 }
 
-impl DatabricksSqlWarehouseAPIV2 for DatabricksSqlWarehouseClient {
+impl ApiVersion2 for ApiClientVersion2 {
     /// GET /api/2.0/sql/statements/{statement_id}
     /// Poll for the statement's status, plus the first chunk of results if available.
     async fn get_statement(

@@ -1,26 +1,27 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use crate::api::DatabricksSqlWarehouseAPIV2;
+use crate::api_v2::ApiVersion2;
 
-use crate::client::*;
+use crate::client_v2::*;
 use crate::models::*;
 
 /// Higher-level service layer built on top of `DatabricksSqlWarehouseClient`.
 /// Provides combinatorial / convenience operations like polling until completion.
+/// May use a combination of API operations at different versions to achieve results
 #[derive(Debug, Clone)]
 pub struct DatabricksSqlWarehouseService {
-    client: DatabricksSqlWarehouseClient,
+    client_v2: ApiClientVersion2,
 }
 
 impl DatabricksSqlWarehouseService {
-    pub fn new(client: DatabricksSqlWarehouseClient) -> Self {
-        Self { client }
+    pub fn new(client: ApiClientVersion2) -> Self {
+        Self { client_v2: client }
     }
 
     /// Returns a reference to the low-level client (if you need direct calls).
-    pub fn client(&self) -> &DatabricksSqlWarehouseClient {
-        &self.client
+    pub fn client(&self) -> &ApiClientVersion2 {
+        &self.client_v2
     }
 
     /// Polls a statement until it reaches a terminal state:
@@ -36,7 +37,7 @@ impl DatabricksSqlWarehouseService {
     ) -> Result<StatementResponse, DatabricksSqlError> {
         let mut polls = 0;
         loop {
-            let resp = self.client.get_statement(statement_id).await?;
+            let resp = self.client_v2.get_statement(statement_id).await?;
             if let Some(status) = &resp.status {
                 match status.state.as_str() {
                     "PENDING" | "RUNNING" => {
@@ -86,7 +87,7 @@ impl DatabricksSqlWarehouseService {
 
 
         // Step 1: Kick off the statement
-        let execute_resp = self.client.execute_statement(&async_req).await?;
+        let execute_resp = self.client_v2.execute_statement(&async_req).await?;
         let statement_id = match execute_resp.statement_id {
             Some(id) => id,
             None => {
@@ -119,7 +120,7 @@ impl DatabricksSqlWarehouseService {
             request.on_wait_timeout = Some("CONTINUE".into());
         }
 
-        let resp = self.client.execute_statement(&request).await?;
+        let resp = self.client_v2.execute_statement(&request).await?;
 
         // If the statement is done or failed, we have everything.
         if let Some(status) = &resp.status {
@@ -154,7 +155,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_execute_example() -> Result<(), Box<dyn std::error::Error>> {
-        let client = DatabricksSqlWarehouseClient::new(
+        let client = ApiClientVersion2::new(
             &std::env::var("DATABRICKS_WORKSPACE_BASE_URL")?,
             &std::env::var("DATABRICKS_TOKEN")?,
         );
