@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+use crate::api::DatabricksSqlWarehouseAPIV2;
 
 use crate::client::*;
 use crate::models::*;

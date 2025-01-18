@@ -1,4 +1,6 @@
 use reqwest::Client;
+
+use crate::api::DatabricksSqlWarehouseAPIV2;
 use crate::models::*;
 
 /// Low-level Databricks SQL Warehouse client that directly calls the REST endpoints.
@@ -40,9 +42,37 @@ impl DatabricksSqlWarehouseClient {
         self.handle_response(resp).await
     }
 
+
+    /// Helper to handle a StatementResponse or error from Databricks.
+    async fn handle_response(
+        &self,
+        resp: reqwest::Response,
+    ) -> Result<StatementResponse, DatabricksSqlError> {
+        let status = resp.status();
+        let text_body = resp.text().await?;
+
+        if status == reqwest::StatusCode::NOT_FOUND {
+            return Err(DatabricksSqlError::NotFound);
+        }
+        if !status.is_success() {
+            return Err(DatabricksSqlError::ApiError(format!(
+                "HTTP {}: {}",
+                status, text_body
+            )));
+        }
+
+        // If success, parse the JSON from the text_body
+        let statement_response = serde_json::from_str(&text_body)
+            .map_err(|e| DatabricksSqlError::ApiError(format!("JSON parse error: {}", e)))?;
+
+        Ok(statement_response)
+    }
+}
+
+impl DatabricksSqlWarehouseAPIV2 for DatabricksSqlWarehouseClient {
     /// GET /api/2.0/sql/statements/{statement_id}
     /// Poll for the statement's status, plus the first chunk of results if available.
-    pub async fn get_statement(
+    async fn get_statement(
         &self,
         statement_id: &str,
     ) -> Result<StatementResponse, DatabricksSqlError> {
@@ -57,10 +87,9 @@ impl DatabricksSqlWarehouseClient {
 
         self.handle_response(resp).await
     }
-
     /// GET /api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}
     /// Fetch a chunk of results for a completed statement.
-    pub async fn get_statement_result_chunk(
+    async fn get_statement_result_chunk(
         &self,
         statement_id: &str,
         chunk_index: u32,
@@ -96,10 +125,9 @@ impl DatabricksSqlWarehouseClient {
         let chunk = resp.json::<ChunkResponse>().await?;
         Ok(chunk)
     }
-
     /// POST /api/2.0/sql/statements/{statement_id}/cancel
     /// Request that an executing statement be canceled.
-    pub async fn cancel_statement(
+    async fn cancel_statement(
         &self,
         statement_id: &str,
     ) -> Result<(), DatabricksSqlError> {
@@ -130,30 +158,5 @@ impl DatabricksSqlWarehouseClient {
         // Cancel response is empty. Successful response means the request was accepted.
         Ok(())
     }
-
-
-    /// Helper to handle a StatementResponse or error from Databricks.
-    async fn handle_response(
-        &self,
-        resp: reqwest::Response,
-    ) -> Result<StatementResponse, DatabricksSqlError> {
-        let status = resp.status();
-        let text_body = resp.text().await?;
-
-        if status == reqwest::StatusCode::NOT_FOUND {
-            return Err(DatabricksSqlError::NotFound);
-        }
-        if !status.is_success() {
-            return Err(DatabricksSqlError::ApiError(format!(
-                "HTTP {}: {}",
-                status, text_body
-            )));
-        }
-
-        // If success, parse the JSON from the text_body
-        let statement_response = serde_json::from_str(&text_body)
-            .map_err(|e| DatabricksSqlError::ApiError(format!("JSON parse error: {}", e)))?;
-
-        Ok(statement_response)
-    }
 }
+
