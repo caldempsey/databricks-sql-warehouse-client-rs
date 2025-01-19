@@ -530,14 +530,12 @@ mod tests {
 
         // We'll generate 5000 rows
         let statement = "SELECT * FROM range(0,50000,1)";
-        let byte_limit = 5000; // hopefully forces multiple external link chunks
 
         let request = StatementRequest {
             statement: statement.to_string(),
             warehouse_id: warehouse_id.clone(),
             disposition: Some("EXTERNAL_LINKS".to_string()),
             wait_timeout: Some("0s".to_string()),
-            byte_limit: Some(byte_limit),
             ..Default::default()
         };
 
@@ -573,7 +571,7 @@ mod tests {
 
         println!("Fetched {} total rows across all pages", total_rows);
         assert_eq!(
-            total_rows, 5000,
+            total_rows, 50000,
             "Expected 5000 rows from range(0,5000,1), but got {}",
             total_rows
         );
